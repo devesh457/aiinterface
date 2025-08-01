@@ -24,6 +24,7 @@ export default function MPRInsightsPage() {
   const [selectedProjectType, setSelectedProjectType] = useState<string>('all')
   const [selectedPersona, setSelectedPersona] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set())
 
   // API Data Fetching
   const { data: healthData, isLoading: healthLoading } = useMPRHealth()
@@ -112,6 +113,19 @@ export default function MPRInsightsPage() {
     }
     return stats
   }, [userVisibleInsights, categoriesData])
+
+  // Toggle expanded state for insight details
+  const toggleExpanded = (insightId: string) => {
+    setExpandedInsights(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(insightId)) {
+        newSet.delete(insightId)
+      } else {
+        newSet.add(insightId)
+      }
+      return newSet
+    })
+  }
 
   // Loading state
   if (criticalIssuesLoading) {
@@ -301,6 +315,38 @@ export default function MPRInsightsPage() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
+                    {/* Project Info - Moved to top */}
+                    {insight.projectInfo && (
+                      <div className="bg-gray-50 p-3 rounded-md mb-3">
+                        <div className="text-sm font-medium text-gray-900 mb-1">
+                          {insight.projectInfo.name}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          <span className="font-medium">UPC:</span> {insight.projectInfo.upc}
+                          {(insight.projectInfo.member || insight.projectInfo.ro || insight.projectInfo.piu) && (
+                            <>
+                              {' • '}
+                              <span className="font-medium">Member/RO/PIU:</span> {[
+                                insight.projectInfo.member, 
+                                insight.projectInfo.ro, 
+                                insight.projectInfo.piu
+                              ].filter(item => item && item.trim() !== '').join('/')}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {insight.sourceReport && (
+                      <div className="bg-gray-50 p-3 rounded-md mb-3">
+                        <div className="text-sm font-medium text-gray-900 mb-1">
+                          {insight.sourceReport.project_name}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          <span className="font-medium">UPC:</span> {insight.sourceReport.upc_code}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="flex items-center gap-3 mb-2">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getCategoryColor(insight.category)}`}>
                         {insight.category}
@@ -432,34 +478,65 @@ export default function MPRInsightsPage() {
                         })()}
                       </div>
                     </CardDescription>
-                    {insight.projectInfo && (
-                      <div className="mt-3 text-sm text-muted-foreground">
-                        <strong>Project:</strong> {insight.projectInfo.name}
-                        <br />
-                        <strong>UPC:</strong> {insight.projectInfo.upc}
-                        {(insight.projectInfo.member || insight.projectInfo.ro || insight.projectInfo.piu) && (
-                          <>
-                            <br />
-                            <strong>Member/RO/PIU:</strong> {[
-                              insight.projectInfo.member, 
-                              insight.projectInfo.ro, 
-                              insight.projectInfo.piu
-                            ].filter(item => item && item.trim() !== '').join('/')}
-                          </>
-                        )}
-                      </div>
-                    )}
-                    {insight.sourceReport && (
-                      <div className="mt-3 text-sm text-muted-foreground">
-                        <strong>Project:</strong> {insight.sourceReport.project_name}
-                        <br />
-                        <strong>UPC:</strong> {insight.sourceReport.upc_code}
-                      </div>
-                    )}
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Expandable Impact Details Section */}
+                {expandedInsights.has(insight.id) && (
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      Impact Details
+                    </h4>
+                    <div className="text-sm text-blue-800 space-y-2">
+                      {/* Get impact details from the database */}
+                      {(() => {
+                        // For critical issues, we should have impact_details from the API
+                        const criticalIssue = criticalIssuesData?.critical_issues.find(issue => issue.id.toString() === insight.id)
+                        
+                        if (criticalIssue?.impact_details) {
+                          return <p>{criticalIssue.impact_details}</p>
+                        }
+                        
+                        // Fallback for other insights
+                        return <p>Impact analysis available upon detailed review.</p>
+                      })()}
+                      
+                      {/* Additional metrics if available */}
+                      {(() => {
+                        const criticalIssue = criticalIssuesData?.critical_issues.find(issue => issue.id.toString() === insight.id)
+                        if (criticalIssue) {
+                          return (
+                            <div className="grid grid-cols-2 gap-4 mt-3">
+                              {criticalIssue.age_days && (
+                                <div>
+                                  <span className="font-medium">Age:</span> {criticalIssue.age_days} days
+                                </div>
+                              )}
+                              {criticalIssue.target_date && (
+                                <div>
+                                  <span className="font-medium">Target Date:</span> {new Date(criticalIssue.target_date).toLocaleDateString()}
+                                </div>
+                              )}
+                              {criticalIssue.cvs_score && (
+                                <div>
+                                  <span className="font-medium">CVS Score:</span> {criticalIssue.cvs_score}/10
+                                </div>
+                              )}
+                              {criticalIssue.escalation_level && (
+                                <div>
+                                  <span className="font-medium">Escalation:</span> {criticalIssue.escalation_level}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        }
+                      })()}
+                    </div>
+                  </div>
+                )}
+                
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1">
@@ -471,10 +548,14 @@ export default function MPRInsightsPage() {
                       Generated {new Date(insight.generatedDate).toLocaleDateString()}
                     </span>
                   </div>
-                  {/* <Button variant="ghost" size="sm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => toggleExpanded(insight.id)}
+                  >
                     <Eye className="h-4 w-4 mr-1" />
-                    View Details
-                  </Button> */}
+                    {expandedInsights.has(insight.id) ? 'Hide Details' : 'View Details'}
+                  </Button>
                 </div>
               </CardContent>
             </Card>

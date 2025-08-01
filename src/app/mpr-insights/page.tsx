@@ -26,6 +26,9 @@ export default function MPRInsightsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set())
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set())
+  const [renderKey, setRenderKey] = useState<number>(0) // Force re-render key
+  const [forceUpdate, setForceUpdate] = useState<number>(0) // Additional force update
+  const [hasUserInteracted, setHasUserInteracted] = useState<boolean>(false) // Track user interaction
 
   // API Data Fetching
   const { data: healthData, isLoading: healthLoading } = useMPRHealth()
@@ -51,11 +54,12 @@ export default function MPRInsightsPage() {
 
   // Initialize collapsed state for all insights (collapsed by default)
   useEffect(() => {
-    if (userVisibleInsights.length > 0 && collapsedCards.size === 0) {
+    if (userVisibleInsights.length > 0 && collapsedCards.size === 0 && !hasUserInteracted) {
+      console.log('🏁 INITIALIZING collapsed state for', userVisibleInsights.length, 'insights');
       const allInsightIds = new Set(userVisibleInsights.map(insight => String(insight.id)))
       setCollapsedCards(allInsightIds)
     }
-  }, [userVisibleInsights, collapsedCards.size])
+  }, [userVisibleInsights, collapsedCards.size, hasUserInteracted])
 
   // Apply filters
   const filteredInsights = useMemo(() => {
@@ -138,6 +142,7 @@ export default function MPRInsightsPage() {
 
   // Toggle collapsed state for entire card
   const toggleCardCollapsed = (insightId: string) => {
+    setHasUserInteracted(true) // Mark user interaction
     setCollapsedCards(prev => {
       const newSet = new Set(prev)
       if (newSet.has(insightId)) {
@@ -151,31 +156,59 @@ export default function MPRInsightsPage() {
 
   // Expand all filtered insights
   const expandAllFiltered = useCallback(() => {
+    console.log('🚀 EXPAND ALL - MULTIPLE FORCE UPDATE STRATEGIES');
     const filteredIds = filteredInsights.map(insight => String(insight.id))
+    console.log('Filtered IDs to expand:', filteredIds);
+    console.log('Current collapsedCards before:', Array.from(collapsedCards));
     
-    setCollapsedCards(prev => {
+    // Mark that user has interacted to prevent auto-initialization
+    setHasUserInteracted(true)
+    
+    // Strategy 1: Clear the entire state and rebuild it
+    console.log('🔄 Strategy 1: Complete state rebuild');
+    setCollapsedCards(() => {
       const newSet = new Set<string>()
-      // Keep all non-filtered items collapsed
-      prev.forEach(id => {
-        if (!filteredIds.includes(id)) {
-          newSet.add(id)
-        }
-      })
+      console.log('Creating completely empty new set');
       return newSet
     })
+    
+    // Strategy 2: Force multiple renders
+    setRenderKey(prev => prev + 1)
+    setForceUpdate(prev => prev + 1)
+    
+    // Strategy 3: Schedule a microtask update
+    Promise.resolve().then(() => {
+      console.log('🔄 Microtask: collapsedCards size is now:', collapsedCards.size);
+      setForceUpdate(prev => prev + 1)
+    })
+    
+    console.log('✨ EXPAND ALL FUNCTION END');
   }, [filteredInsights])
 
   // Collapse all filtered insights  
   const collapseAllFiltered = useCallback(() => {
+    console.log('🚀 COLLAPSE ALL - MULTIPLE FORCE UPDATE STRATEGIES');
     const filteredIds = filteredInsights.map(insight => String(insight.id))
+    console.log('Filtered IDs to collapse:', filteredIds);
+    console.log('Current collapsedCards before:', Array.from(collapsedCards));
+    
+    // Mark that user has interacted to prevent auto-initialization
+    setHasUserInteracted(true)
     
     setCollapsedCards(prev => {
       const newSet = new Set(prev)
       filteredIds.forEach(id => {
         newSet.add(id)
       })
+      console.log('Adding filtered IDs to collapsed set:', Array.from(newSet));
       return newSet
     })
+    
+    // Force multiple renders
+    setRenderKey(prev => prev + 1)
+    setForceUpdate(prev => prev + 1)
+    
+    console.log('✨ COLLAPSE ALL FUNCTION END');
   }, [filteredInsights])
 
   // Check if all filtered insights are expanded
@@ -383,7 +416,26 @@ export default function MPRInsightsPage() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={allFilteredExpanded ? collapseAllFiltered : expandAllFiltered}
+                  onClick={() => {
+                    console.log('=== BUTTON CLICK DEBUG ===');
+                    console.log('allFilteredExpanded:', allFilteredExpanded);
+                    console.log('allFilteredCollapsed:', allFilteredCollapsed);
+                    console.log('filteredInsights count:', filteredInsights.length);
+                    console.log('collapsedCards size:', collapsedCards.size);
+                    console.log('First 5 filtered IDs:', filteredInsights.slice(0, 5).map(i => String(i.id)));
+                    console.log('First 5 collapsed status:', filteredInsights.slice(0, 5).map(i => ({
+                      id: String(i.id),
+                      isCollapsed: collapsedCards.has(String(i.id))
+                    })));
+                    
+                    if (allFilteredExpanded) {
+                      console.log('>>> CALLING collapseAllFiltered');
+                      collapseAllFiltered();
+                    } else {
+                      console.log('>>> CALLING expandAllFiltered');
+                      expandAllFiltered();
+                    }
+                  }}
                   className="text-xs"
                   disabled={filteredInsights.length === 0}
                 >
@@ -406,11 +458,19 @@ export default function MPRInsightsPage() {
             )}
           </div>
           
-          {filteredInsights.map((insight) => {
-            const isCollapsed = collapsedCards.has(String(insight.id))
+          {filteredInsights.map((insight, index) => {
+            const cardId = String(insight.id)
+            const isCollapsed = collapsedCards.has(cardId)
+            
+            // Debug logging for first few cards
+            if (index < 3) {
+              console.log(`🔍 Card ${cardId}: isCollapsed=${isCollapsed}, collapsedCards.size=${collapsedCards.size}, renderKey=${renderKey}, forceUpdate=${forceUpdate}`);
+              console.log(`🔍 collapsedCards.has("${cardId}") = ${collapsedCards.has(cardId)}`);
+              console.log(`🔍 collapsedCards contains:`, Array.from(collapsedCards).slice(0, 5));
+            }
             
             return (
-            <Card key={insight.id} className="group hover:shadow-lg transition-all">
+            <Card key={`${insight.id}-${renderKey}-${forceUpdate}`} className="group hover:shadow-lg transition-all">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

@@ -64,7 +64,7 @@ export interface MPRInsight {
   id: string
   title: string
   content: string
-  category: 'performance' | 'risk' | 'opportunity' | 'achievement'
+  category: string // Allow any string category from database
   priority: 'high' | 'medium' | 'low'
   month: string
   year: string

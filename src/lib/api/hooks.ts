@@ -1,6 +1,7 @@
 import { useQuery, UseQueryResult } from '@tanstack/react-query'
 import { mprBotApi } from './mprbot-client'
 import { MPRReportsResponse, MPRHealthResponse, MPRCriticalIssuesResponse } from '@/types/mpr'
+import { categoriesApi, CategoriesResponse } from './categories'
 
 // React Query hooks for MPR API
 
@@ -44,6 +45,15 @@ export function useMPRCriticalIssues(params?: {
     queryKey: ['mpr-critical-issues', params],
     queryFn: () => mprBotApi.getCriticalIssues(params),
     staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes (more critical data)
+    retry: 2,
+  })
+}
+
+export function useMPRCategories(): UseQueryResult<CategoriesResponse, Error> {
+  return useQuery({
+    queryKey: ['mpr-categories'],
+    queryFn: () => categoriesApi.getCategories(),
+    staleTime: 10 * 60 * 1000, // Categories don't change often, cache for 10 minutes
     retry: 2,
   })
 }

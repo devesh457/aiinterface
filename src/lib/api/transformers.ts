@@ -38,8 +38,8 @@ export function transformCriticalIssueToInsight(issue: MPRCriticalIssue): MPRIns
   // Determine priority based on CVS score and escalation level
   const priority = determineCriticalIssuePriority(issue)
   
-  // Category is always 'risk' for critical issues
-  const category = 'risk' as const
+  // Use the actual category from the database
+  const category = issue.category || 'Unknown'
 
   return {
     id: issue.id.toString(),
@@ -65,19 +65,34 @@ export function transformCriticalIssueToInsight(issue: MPRCriticalIssue): MPRIns
   }
 }
 
-function determineCategory(report: MPRReport): MPRInsight['category'] {
+function determineCategory(report: MPRReport): string {
   const summary = report.summary_preview.toLowerCase()
   
+  // Try to map to database categories based on content
+  if (summary.includes('financial') || summary.includes('cost') || summary.includes('budget') || summary.includes('payment')) {
+    return 'Financial'
+  }
+  if (summary.includes('quality') || summary.includes('ncr') || summary.includes('defect') || summary.includes('inspection')) {
+    return 'Quality/NCR'
+  }
+  if (summary.includes('row') || summary.includes('land') || summary.includes('acquisition') || summary.includes('right of way')) {
+    return 'ROW'
+  }
+  if (summary.includes('safety') || summary.includes('accident') || summary.includes('hazard') || summary.includes('injury')) {
+    return 'Safety'
+  }
+  
+  // Fallback to generic categories
   if (summary.includes('risk') || summary.includes('issue') || summary.includes('problem')) {
-    return 'risk'
+    return 'Risk'
   }
   if (summary.includes('opportunity') || summary.includes('improve')) {
-    return 'opportunity'
+    return 'Opportunity'
   }
   if (summary.includes('achieve') || summary.includes('success') || summary.includes('complete')) {
-    return 'achievement'
+    return 'Achievement'
   }
-  return 'performance'
+  return 'Performance'
 }
 
 function determinePriority(report: MPRReport): MPRInsight['priority'] {

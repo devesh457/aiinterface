@@ -6,7 +6,7 @@ import { MainLayout } from '@/components/layout/main-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useMPRCriticalIssues, useMPRHealth } from '@/lib/api/hooks'
+import { useMPRCriticalIssues, useMPRHealth, useMPRCategories } from '@/lib/api/hooks'
 import { transformCriticalIssuesToInsights } from '@/lib/api/transformers'
 import { MPRInsight } from '@/types/mpr'
 
@@ -19,7 +19,7 @@ export default function MPRInsightsPage() {
     department: 'Engineering'
   }
 
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'performance' | 'risk' | 'opportunity' | 'achievement'>('all')
+  const [selectedFilter, setSelectedFilter] = useState<string>('all')
   const [selectedProject, setSelectedProject] = useState<string>('all')
   const [selectedProjectType, setSelectedProjectType] = useState<string>('all')
   const [selectedPersona, setSelectedPersona] = useState<string>('all')
@@ -28,6 +28,7 @@ export default function MPRInsightsPage() {
   // API Data Fetching
   const { data: healthData, isLoading: healthLoading } = useMPRHealth()
   const { data: criticalIssuesData, isLoading: criticalIssuesLoading, error: criticalIssuesError } = useMPRCriticalIssues()
+  const { data: categoriesData, isLoading: categoriesLoading } = useMPRCategories()
 
   // Transform API data to insights
   const allInsights = useMemo(() => {
@@ -102,12 +103,15 @@ export default function MPRInsightsPage() {
     return projects
   }, [userVisibleInsights])
 
-  const categoryStats = useMemo(() => ({
-    achievements: userVisibleInsights.filter(i => i.category === 'achievement').length,
-    risks: userVisibleInsights.filter(i => i.category === 'risk').length,
-    opportunities: userVisibleInsights.filter(i => i.category === 'opportunity').length,
-    performance: userVisibleInsights.filter(i => i.category === 'performance').length
-  }), [userVisibleInsights])
+  const categoryStats = useMemo(() => {
+    const stats: Record<string, number> = {}
+    if (categoriesData?.categories) {
+      categoriesData.categories.forEach(category => {
+        stats[category] = userVisibleInsights.filter(i => i.category === category).length
+      })
+    }
+    return stats
+  }, [userVisibleInsights, categoriesData])
 
   // Loading state
   if (criticalIssuesLoading) {
@@ -189,12 +193,12 @@ export default function MPRInsightsPage() {
                 value={selectedFilter} 
                 onChange={(e) => setSelectedFilter(e.target.value as any)}
                 className="px-3 py-2 border rounded-md text-sm"
+                disabled={categoriesLoading}
               >
                 <option value="all">All Categories</option>
-                <option value="achievement">Achievements</option>
-                <option value="performance">Performance</option>
-                <option value="risk">Risks</option>
-                <option value="opportunity">Opportunities</option>
+                {categoriesData?.categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
               </select>
               <select 
                 value={selectedProject} 
@@ -233,42 +237,43 @@ export default function MPRInsightsPage() {
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Achievements</CardTitle>
-              <div className="text-xl">🏆</div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{categoryStats.achievements}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Performance</CardTitle>
-              <BarChart3 className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{categoryStats.performance}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Risks</CardTitle>
-              <div className="text-xl">⚠️</div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{categoryStats.risks}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Opportunities</CardTitle>
-              <div className="text-xl">💡</div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">{categoryStats.opportunities}</div>
-            </CardContent>
-          </Card>
+          {categoriesData?.categories.map((category, index) => {
+            // Define colors for each category
+            const getCategoryColor = (cat: string) => {
+              switch (cat) {
+                case 'Financial': return 'text-green-600'
+                case 'Quality/NCR': return 'text-orange-600'
+                case 'ROW': return 'text-blue-600'
+                case 'Safety': return 'text-red-600'
+                default: return 'text-gray-600'
+              }
+            }
+            
+            // Define icons for each category
+            const getCategoryIcon = (cat: string) => {
+              switch (cat) {
+                case 'Financial': return '💰'
+                case 'Quality/NCR': return '🔍'
+                case 'ROW': return '🛣️'
+                case 'Safety': return '⚠️'
+                default: return '📊'
+              }
+            }
+            
+            return (
+              <Card key={category}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{category}</CardTitle>
+                  <div className="text-xl">{getCategoryIcon(category)}</div>
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-2xl font-bold ${getCategoryColor(category)}`}>
+                    {categoryStats[category] || 0}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
 
         {/* Data Source Info */}

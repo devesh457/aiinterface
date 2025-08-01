@@ -1,25 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import { TrendingUp, Filter, Calendar, User, BarChart3, FileText, Search, Eye, ChevronDown } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { TrendingUp, Filter, Calendar, User, BarChart3, FileText, Search, Eye, ChevronDown, AlertCircle, Loader2 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/main-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-
-interface MPRInsight {
-  id: string
-  title: string
-  content: string
-  category: 'performance' | 'risk' | 'opportunity' | 'achievement'
-  priority: 'high' | 'medium' | 'low'
-  month: string
-  year: string
-  department: string
-  author: string
-  generatedDate: string
-  viewableBy: string[] // User roles/departments that can see this insight
-}
+import { useMPRCriticalIssues, useMPRHealth } from '@/lib/api/hooks'
+import { transformCriticalIssuesToInsights } from '@/lib/api/transformers'
+import { MPRInsight } from '@/types/mpr'
 
 export default function MPRInsightsPage() {
   // Current user context (would come from auth)
@@ -31,84 +20,48 @@ export default function MPRInsightsPage() {
   }
 
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'performance' | 'risk' | 'opportunity' | 'achievement'>('all')
-  const [selectedMonth, setSelectedMonth] = useState<string>('all')
+  const [selectedProject, setSelectedProject] = useState<string>('all')
+  const [selectedProjectType, setSelectedProjectType] = useState<string>('all')
+  const [selectedPersona, setSelectedPersona] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Sample insights data - filtered based on user permissions
-  const allInsights: MPRInsight[] = [
-    {
-      id: '1',
-      title: 'Engineering Team Performance Exceeded Targets',
-      content: 'The engineering team delivered 127% of planned features in January, with particularly strong performance in backend development. Key contributors include faster deployment cycles and improved code review processes.',
-      category: 'achievement',
-      priority: 'high',
-      month: 'January',
-      year: '2024',
-      department: 'Engineering',
-      author: 'System Analysis',
-      generatedDate: '2024-02-01',
-      viewableBy: ['manager', 'admin', 'Engineering']
-    },
-    {
-      id: '2',
-      title: 'Resource Allocation Risk Identified',
-      content: 'Analysis shows potential resource constraints in Q2 due to 3 upcoming project overlaps. Recommend reviewing project timelines or additional staffing for the mobile app development track.',
-      category: 'risk',
-      priority: 'high',
-      month: 'February',
-      year: '2024',
-      department: 'Engineering',
-      author: 'System Analysis',
-      generatedDate: '2024-03-01',
-      viewableBy: ['manager', 'admin', 'Engineering']
-    },
-    {
-      id: '3',
-      title: 'Cross-Department Collaboration Opportunity',
-      content: 'Marketing and Engineering teams show 40% overlap in customer feedback analysis. Opportunity to create shared insights dashboard to improve product-market alignment.',
-      category: 'opportunity',
-      priority: 'medium',
-      month: 'February',
-      year: '2024',
-      department: 'Cross-functional',
-      author: 'System Analysis',
-      generatedDate: '2024-03-05',
-      viewableBy: ['manager', 'admin', 'Engineering', 'Marketing']
-    },
-    {
-      id: '4',
-      title: 'Development Velocity Improvement',
-      content: 'Sprint velocity increased by 23% compared to previous quarter. Contributing factors include new CI/CD pipeline implementation and team training completion.',
-      category: 'performance',
-      priority: 'medium',
-      month: 'March',
-      year: '2024',
-      department: 'Engineering',
-      author: 'System Analysis',
-      generatedDate: '2024-04-01',
-      viewableBy: ['manager', 'admin', 'Engineering']
-    }
-  ]
+  // API Data Fetching
+  const { data: healthData, isLoading: healthLoading } = useMPRHealth()
+  const { data: criticalIssuesData, isLoading: criticalIssuesLoading, error: criticalIssuesError } = useMPRCriticalIssues()
+
+  // Transform API data to insights
+  const allInsights = useMemo(() => {
+    if (!criticalIssuesData?.critical_issues) return []
+    return transformCriticalIssuesToInsights(criticalIssuesData.critical_issues)
+  }, [criticalIssuesData])
 
   // Filter insights based on user permissions
-  const userVisibleInsights = allInsights.filter(insight => 
-    insight.viewableBy.some(permission => 
-      permission === currentUser.role || 
-      permission === currentUser.department ||
-      permission === 'admin'
+  const userVisibleInsights = useMemo(() => {
+    return allInsights.filter(insight => 
+      insight.viewableBy.some(permission => 
+        permission === currentUser.role || 
+        permission === currentUser.department ||
+        permission === 'admin'
+      )
     )
-  )
+  }, [allInsights, currentUser])
 
   // Apply filters
-  const filteredInsights = userVisibleInsights.filter(insight => {
-    const matchesCategory = selectedFilter === 'all' || insight.category === selectedFilter
-    const matchesMonth = selectedMonth === 'all' || insight.month === selectedMonth
-    const matchesSearch = searchQuery === '' || 
-      insight.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      insight.content.toLowerCase().includes(searchQuery.toLowerCase())
-    
-    return matchesCategory && matchesMonth && matchesSearch
-  })
+  const filteredInsights = useMemo(() => {
+    return userVisibleInsights.filter(insight => {
+      const matchesCategory = selectedFilter === 'all' || insight.category === selectedFilter
+      const matchesProject = selectedProject === 'all' || 
+        (insight.projectInfo?.name && insight.projectInfo.name.toLowerCase().includes(selectedProject.toLowerCase())) ||
+        (insight.sourceReport?.project_name && insight.sourceReport.project_name.toLowerCase().includes(selectedProject.toLowerCase()))
+      const matchesProjectType = selectedProjectType === 'all' || insight.department === selectedProjectType
+      const matchesPersona = selectedPersona === 'all' || insight.persona === selectedPersona
+      const matchesSearch = searchQuery === '' || 
+        insight.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        insight.content.toLowerCase().includes(searchQuery.toLowerCase())
+      
+      return matchesCategory && matchesProject && matchesProjectType && matchesPersona && matchesSearch
+    })
+  }, [userVisibleInsights, selectedFilter, selectedProject, selectedProjectType, selectedPersona, searchQuery])
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -129,11 +82,69 @@ export default function MPRInsightsPage() {
     }
   }
 
-  const categoryStats = {
+  // Get unique personas from the insights
+  const availablePersonas = useMemo(() => {
+    const personas = userVisibleInsights
+      .map(insight => insight.persona)
+      .filter(persona => persona && persona.trim() !== '')
+      .filter((persona, index, self) => self.indexOf(persona) === index)
+      .sort()
+    return personas
+  }, [userVisibleInsights])
+
+  // Get unique project names from the insights
+  const availableProjects = useMemo(() => {
+    const projects = userVisibleInsights
+      .map(insight => insight.projectInfo?.name || insight.sourceReport?.project_name)
+      .filter(project => project && project.trim() !== '')
+      .filter((project, index, self) => self.indexOf(project) === index)
+      .sort()
+    return projects
+  }, [userVisibleInsights])
+
+  const categoryStats = useMemo(() => ({
     achievements: userVisibleInsights.filter(i => i.category === 'achievement').length,
     risks: userVisibleInsights.filter(i => i.category === 'risk').length,
     opportunities: userVisibleInsights.filter(i => i.category === 'opportunity').length,
     performance: userVisibleInsights.filter(i => i.category === 'performance').length
+  }), [userVisibleInsights])
+
+  // Loading state
+  if (criticalIssuesLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-lg font-medium">Loading MPR insights...</p>
+            <p className="text-muted-foreground">Fetching data from MPRBOT API</p>
+          </div>
+        </div>
+      </MainLayout>
+    )
+  }
+
+  // Error state
+  if (criticalIssuesError) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Card className="p-8 text-center max-w-md">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Unable to Load Data</h3>
+            <p className="text-muted-foreground mb-4">
+              There was an error connecting to the MPRBOT API. Please check if the API is running.
+            </p>
+            <div className="text-sm text-red-600 bg-red-50 p-3 rounded border mb-4">
+              {criticalIssuesError.message}
+            </div>
+            <Button onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </Card>
+        </div>
+      </MainLayout>
+    )
   }
 
   return (
@@ -151,6 +162,13 @@ export default function MPRInsightsPage() {
               </h1>
               <p className="text-muted-foreground mt-2">
                 AI-generated insights from monthly progress reports • Viewing as <span className="font-medium">{currentUser.role}</span> in <span className="font-medium">{currentUser.department}</span>
+                {healthData && (
+                  <span className="ml-2">
+                    • API Status: <span className={`font-medium ${healthData.status === 'healthy' ? 'text-green-600' : 'text-red-600'}`}>
+                      {healthData.status}
+                    </span>
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -179,14 +197,35 @@ export default function MPRInsightsPage() {
                 <option value="opportunity">Opportunities</option>
               </select>
               <select 
-                value={selectedMonth} 
-                onChange={(e) => setSelectedMonth(e.target.value)}
+                value={selectedProject} 
+                onChange={(e) => setSelectedProject(e.target.value)}
                 className="px-3 py-2 border rounded-md text-sm"
               >
-                <option value="all">All Months</option>
-                <option value="January">January</option>
-                <option value="February">February</option>
-                <option value="March">March</option>
+                <option value="all">All Projects</option>
+                {availableProjects.map(project => (
+                  <option key={project} value={project}>
+                    {project && project.length > 50 ? project.substring(0, 50) + '...' : project}
+                  </option>
+                ))}
+              </select>
+              <select 
+                value={selectedProjectType} 
+                onChange={(e) => setSelectedProjectType(e.target.value)}
+                className="px-3 py-2 border rounded-md text-sm"
+              >
+                <option value="all">All Types</option>
+                <option value="Operations & Maintenance">OM</option>
+                <option value="Under Construction">UC</option>
+              </select>
+              <select 
+                value={selectedPersona} 
+                onChange={(e) => setSelectedPersona(e.target.value)}
+                className="px-3 py-2 border rounded-md text-sm"
+              >
+                <option value="all">All Personas</option>
+                {availablePersonas.map(persona => (
+                  <option key={persona} value={persona}>{persona}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -232,6 +271,18 @@ export default function MPRInsightsPage() {
           </Card>
         </div>
 
+        {/* Data Source Info */}
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2 text-blue-700">
+              <FileText className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                Real-time data from MPRBOT API • {criticalIssuesData?.total || 0} critical issues • {filteredInsights.length} insights shown
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Insights Grid */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -255,11 +306,43 @@ export default function MPRInsightsPage() {
                       <span className="text-sm text-muted-foreground">
                         {insight.month} {insight.year}
                       </span>
+                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                        {insight.department === 'Operations & Maintenance' ? 'OM' : 'UC'}
+                      </span>
+                      {insight.persona && (
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          {insight.persona}
+                        </span>
+                      )}
                     </div>
                     <CardTitle className="text-lg mb-2">{insight.title}</CardTitle>
                     <CardDescription className="text-base leading-relaxed">
                       {insight.content}
                     </CardDescription>
+                    {insight.projectInfo && (
+                      <div className="mt-3 text-sm text-muted-foreground">
+                        <strong>Project:</strong> {insight.projectInfo.name}
+                        <br />
+                        <strong>UPC:</strong> {insight.projectInfo.upc}
+                        {(insight.projectInfo.member || insight.projectInfo.ro || insight.projectInfo.piu) && (
+                          <>
+                            <br />
+                            <strong>Member/RO/PIU:</strong> {[
+                              insight.projectInfo.member, 
+                              insight.projectInfo.ro, 
+                              insight.projectInfo.piu
+                            ].filter(item => item && item.trim() !== '').join('/')}
+                          </>
+                        )}
+                      </div>
+                    )}
+                    {insight.sourceReport && (
+                      <div className="mt-3 text-sm text-muted-foreground">
+                        <strong>Project:</strong> {insight.sourceReport.project_name}
+                        <br />
+                        <strong>UPC:</strong> {insight.sourceReport.upc_code}
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -284,7 +367,7 @@ export default function MPRInsightsPage() {
             </Card>
           ))}
 
-          {filteredInsights.length === 0 && (
+          {filteredInsights.length === 0 && !criticalIssuesLoading && (
             <Card className="p-8 text-center">
               <div className="text-muted-foreground">
                 <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -297,4 +380,4 @@ export default function MPRInsightsPage() {
       </div>
     </MainLayout>
   )
-} 
+}

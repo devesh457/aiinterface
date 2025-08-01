@@ -203,8 +203,7 @@ What would you like to chat about today?`,
       try {
         const { processingResult, analysisResult } = await documentProcessor.processFileWithAnalysis(
           file, 
-          documentId, 
-          enableAIAnalysis
+          documentId
         )
         
         const finalStatus = processingResult.success ? 'ready' : 'error'
@@ -215,10 +214,10 @@ What would you like to chat about today?`,
               ? {
                   ...doc,
                   status: finalStatus,
-                  content: processingResult.content || '',
+                  content: analysisResult?.extractedText || '',
                   errorMessage: processingResult.error,
                   processingProgress: processingResult.success ? 100 : undefined,
-                  documentType: processingResult.documentType,
+                  documentType: analysisResult?.documentType || 'unknown',
                   geminiAnalysis: analysisResult,
                   complianceScore: analysisResult?.complianceScore,
                   issues: analysisResult?.issues,
@@ -231,7 +230,7 @@ What would you like to chat about today?`,
 
         if (processingResult.success) {
           // Determine document type for the message
-          const documentTypeName = processingResult.documentType === 'highway-engineering' ? 
+          const documentTypeName = analysisResult?.documentType === 'highway-engineering' ? 
                                    'Highway engineering document' : 
                                    'Engineering document'
 

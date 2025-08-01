@@ -46,7 +46,7 @@ next-env.d.ts
 Thumbs.db
 
 # Environment files (but keep .env for sharing non-sensitive config)
-# .env
+.env
 
 # Python virtual environment (if any)
 interface_env/

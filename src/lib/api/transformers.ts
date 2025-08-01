@@ -44,7 +44,7 @@ export function transformCriticalIssueToInsight(issue: MPRCriticalIssue): MPRIns
   return {
     id: issue.id.toString(),
     title: issue.title,
-    content: `${issue.description}\n\nRoot Cause: ${issue.preliminary_root_cause}\n\nRecommended Action: ${issue.recommended_action}`,
+    content: issue.description, // Only use description, let UI handle Root Cause and Action separately
     category,
     priority,
     month,
@@ -108,17 +108,17 @@ function determinePriority(report: MPRReport): MPRInsight['priority'] {
 }
 
 function determineCriticalIssuePriority(issue: MPRCriticalIssue): MPRInsight['priority'] {
-  // Use CVS score if available
+  // Use CVS score if available (CVS score is out of 5)
   if (issue.cvs_score !== null) {
-    if (issue.cvs_score >= 8) return 'high'
-    if (issue.cvs_score >= 5) return 'medium'
-    return 'low'
+    if (issue.cvs_score >= 4) return 'high'      // 4-5 = High
+    if (issue.cvs_score >= 2.5) return 'medium'  // 2.5-3.9 = Medium  
+    return 'low'                                 // 0-2.4 = Low
   }
   
   // Fall back to escalation level
   if (issue.escalation_level) {
     const level = issue.escalation_level.toLowerCase()
-    if (level.includes('high') || level.includes('critical') || level.includes('urgent')) {
+    if (level.includes('high') || level.includes('critical') || level.includes('urgent') || level.includes('chairman')) {
       return 'high'
     }
     if (level.includes('low') || level.includes('minor')) {

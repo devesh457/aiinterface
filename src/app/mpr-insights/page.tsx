@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { TrendingUp, Filter, Calendar, User, BarChart3, FileText, Search, Eye, ChevronDown, AlertCircle, Loader2 } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { TrendingUp, Filter, Calendar, User, BarChart3, FileText, Search, Eye, ChevronDown, AlertCircle, Loader2, Info } from 'lucide-react'
 import { MainLayout } from '@/components/layout/main-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -25,6 +25,7 @@ export default function MPRInsightsPage() {
   const [selectedPersona, setSelectedPersona] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set())
+  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set())
 
   // API Data Fetching
   const { data: healthData, isLoading: healthLoading } = useMPRHealth()
@@ -47,6 +48,14 @@ export default function MPRInsightsPage() {
       )
     )
   }, [allInsights, currentUser])
+
+  // Initialize collapsed state for all insights (collapsed by default)
+  useEffect(() => {
+    if (userVisibleInsights.length > 0) {
+      const allInsightIds = new Set(userVisibleInsights.map(insight => insight.id))
+      setCollapsedCards(allInsightIds)
+    }
+  }, [userVisibleInsights])
 
   // Apply filters
   const filteredInsights = useMemo(() => {
@@ -127,6 +136,19 @@ export default function MPRInsightsPage() {
     })
   }
 
+  // Toggle collapsed state for entire card
+  const toggleCardCollapsed = (insightId: string) => {
+    setCollapsedCards(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(insightId)) {
+        newSet.delete(insightId)
+      } else {
+        newSet.add(insightId)
+      }
+      return newSet
+    })
+  }
+
   // Loading state
   if (criticalIssuesLoading) {
     return (
@@ -177,6 +199,20 @@ export default function MPRInsightsPage() {
                   <TrendingUp className="h-8 w-8 text-white" />
                 </div>
                 MPR Insights Dashboard
+                <div className="group relative">
+                  <Info className="h-5 w-5 text-muted-foreground hover:text-blue-600 cursor-help" />
+                  <div className="absolute left-0 top-8 z-50 w-80 p-4 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                    <h4 className="font-semibold text-gray-900 mb-2">Priority Classification</h4>
+                    <div className="text-sm text-gray-700 space-y-1">
+                      <div><span className="font-medium text-red-600">High:</span> CVS ≥ 4.0 or Critical escalation</div>
+                      <div><span className="font-medium text-yellow-600">Medium:</span> CVS 2.5-3.9 or Standard escalation</div>
+                      <div><span className="font-medium text-green-600">Low:</span> CVS &lt; 2.5 or Minor escalation</div>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-2">
+                      CVS scores are rated on a scale of 0-5
+                    </div>
+                  </div>
+                </div>
               </h1>
               <p className="text-muted-foreground mt-2">
                 AI-generated insights from monthly progress reports 
@@ -310,12 +346,15 @@ export default function MPRInsightsPage() {
             </h2>
           </div>
           
-          {filteredInsights.map((insight) => (
+          {filteredInsights.map((insight) => {
+            const isCollapsed = collapsedCards.has(insight.id)
+            
+            return (
             <Card key={insight.id} className="group hover:shadow-lg transition-all">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    {/* Project Info - Moved to top */}
+                    {/* Project Info - Always visible */}
                     {insight.projectInfo && (
                       <div className="bg-gray-50 p-3 rounded-md mb-3">
                         <div className="text-sm font-medium text-gray-900 mb-1">
@@ -347,6 +386,7 @@ export default function MPRInsightsPage() {
                       </div>
                     )}
                     
+                    {/* Metadata - Always visible */}
                     <div className="flex items-center gap-3 mb-2">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getCategoryColor(insight.category)}`}>
                         {insight.category}
@@ -366,200 +406,391 @@ export default function MPRInsightsPage() {
                         </span>
                       )}
                     </div>
-                    <CardTitle className="text-lg mb-2">{insight.title}</CardTitle>
-                    <CardDescription className="text-base leading-relaxed">
-                      {/* Enhanced formatting for all insights */}
-                      <div className="space-y-3">
-                        {/* Main content with cleaned text */}
-                        {(() => {
-                          const content = insight.content;
-                          // Remove Root Cause and Recommended Action from main content for cleaner display
-                          let cleanContent = content
-                            .replace(/Root Cause: [^.]+(?:\.|$)/g, '')
-                            .replace(/Recommended Action: .+/g, '')
-                            .trim();
+                    
+                    {/* Title and Toggle Button */}
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="text-lg mb-2 flex-1">{insight.title}</CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleCardCollapsed(insight.id)}
+                        className="ml-3 flex-shrink-0"
+                      >
+                        <ChevronDown className={`h-4 w-4 transition-transform ${isCollapsed ? '' : 'rotate-180'}`} />
+                        <span className="ml-1 text-xs">
+                          {isCollapsed ? 'Expand' : 'Collapse'}
+                        </span>
+                      </Button>
+                    </div>
+                    
+                    {/* Collapsible Content */}
+                    {!isCollapsed && (
+                      <CardDescription className="text-base leading-relaxed">
+                        {/* Enhanced formatting for all insights */}
+                        <div className="space-y-3">
+                          {/* Main content with cleaned text */}
+                          {(() => {
+                            const content = insight.content;
+                            // Remove Root Cause and Recommended Action from main content for cleaner display
+                            let cleanContent = content
+                              .replace(/Root Cause: [^.]+(?:\.|$)/g, '')
+                              .replace(/Recommended Action: .+/g, '')
+                              .trim();
+                            
+                            // If content is empty after cleaning, show original
+                            if (!cleanContent) {
+                              cleanContent = content;
+                            }
+                            
+                            return <p className="mb-3">{cleanContent}</p>;
+                          })()}
                           
-                          // If content is empty after cleaning, show original
-                          if (!cleanContent) {
-                            cleanContent = content;
-                          }
-                          
-                          return <p className="mb-3">{cleanContent}</p>;
-                        })()}
-                        
-                        {/* Extract and display Root Cause and Recommended Action for all insights */}
-                        {(() => {
-                          const content = insight.content;
-                          const rootCauseMatch = content.match(/Root Cause: ([^.]+(?:\.|$))/i) || 
-                                               content.match(/root cause: ([^.]+(?:\.|$))/i);
-                          const actionMatch = content.match(/Recommended Action: (.+)/i) || 
-                                            content.match(/recommended action: (.+)/i) ||
-                                            content.match(/Action: (.+)/i) ||
-                                            content.match(/action: (.+)/i);
-                          
-                          // Determine responsible persona based on content and insight type
-                          const getResponsiblePersona = (actionText: string, category: string) => {
-                            return insight.persona
-                          };
-                          
-                          return (
-                            <>
-                              {/* Root Cause */}
-                              {rootCauseMatch ? (
-                                <div className="bg-orange-50 border-l-4 border-orange-400 p-3 rounded">
-                                  <div className="flex items-center mb-1">
-                                    <AlertCircle className="h-4 w-4 text-orange-600 mr-2" />
-                                    <span className="font-semibold text-orange-800">Root Cause</span>
-                                  </div>
-                                  <p className="text-orange-700 text-sm">{rootCauseMatch[1].replace(/\.$/, '')}</p>
-                                </div>
-                              ) : (
-                                // Generate generic root cause based on category if not explicitly mentioned
-                                insight.category === 'risk' && (
-                                  <div className="bg-orange-50 border-l-4 border-orange-400 p-3 rounded">
-                                    <div className="flex items-center mb-1">
-                                      <AlertCircle className="h-4 w-4 text-orange-600 mr-2" />
-                                      <span className="font-semibold text-orange-800">Root Cause</span>
+                          {/* Extract and display Root Cause and Recommended Action for all insights */}
+                          {(() => {
+                            // Get Root Cause and Recommended Action directly from API data instead of parsing content
+                            const criticalIssue = criticalIssuesData?.critical_issues.find(issue => issue.id.toString() === insight.id)
+                            
+                            if (criticalIssue) {
+                              // For critical issues, use API data directly
+                              return (
+                                <>
+                                  {/* Root Cause Analysis - Enhanced */}
+                                  {criticalIssue.preliminary_root_cause && (
+                                    <div className="bg-gradient-to-r from-orange-50 to-red-50 border-l-4 border-orange-400 p-4 rounded-lg">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center">
+                                          <AlertCircle className="h-5 w-5 text-orange-600 mr-2" />
+                                          <span className="font-semibold text-orange-800 text-base">Root Cause Analysis</span>
+                                        </div>
+                                        <span className="text-xs bg-orange-200 text-orange-800 px-3 py-1 rounded-full font-medium">
+                                          📊 Analysis Required
+                                        </span>
+                                      </div>
+                                      
+                                      {/* Primary Root Cause */}
+                                      <div className="mb-3">
+                                        <div className="flex items-center mb-2">
+                                          <div className="w-2 h-2 bg-orange-600 rounded-full mr-2"></div>
+                                          <span className="font-semibold text-orange-900 text-sm">Primary Cause</span>
+                                        </div>
+                                        <p className="text-orange-800 text-sm ml-4 bg-white/50 p-2 rounded border-l-2 border-orange-300">
+                                          {criticalIssue.preliminary_root_cause}
+                                        </p>
+                                      </div>
+                                      
+                                      {/* Analysis Dimensions */}
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                                        {/* Impact Analysis */}
+                                        <div className="bg-white/60 p-3 rounded border border-orange-200">
+                                          <div className="flex items-center mb-2">
+                                            <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                                            <span className="font-medium text-red-700 text-xs">IMPACT SEVERITY</span>
+                                          </div>
+                                          <div className="flex items-center">
+                                            <span className="text-lg font-bold text-red-600">
+                                              {criticalIssue.cvs_score ? `${criticalIssue.cvs_score}/5` : 'High'}
+                                            </span>
+                                            <span className="text-xs text-red-600 ml-2">CVS Score</span>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Age Analysis */}
+                                        <div className="bg-white/60 p-3 rounded border border-orange-200">
+                                          <div className="flex items-center mb-2">
+                                            <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+                                            <span className="font-medium text-yellow-700 text-xs">PERSISTENCE</span>
+                                          </div>
+                                          <div className="flex items-center">
+                                            <span className="text-lg font-bold text-yellow-600">
+                                              {criticalIssue.age_days ? `${Math.floor(criticalIssue.age_days / 30)}` : '?'}
+                                            </span>
+                                            <span className="text-xs text-yellow-600 ml-2">months old</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Risk Factors */}
+                                      <div className="mt-3 p-3 bg-white/40 rounded border border-orange-200">
+                                        <div className="flex items-center mb-2">
+                                          <AlertCircle className="h-4 w-4 text-orange-600 mr-2" />
+                                          <span className="font-medium text-orange-800 text-sm">Contributing Risk Factors</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                          {(() => {
+                                            const riskFactors = [];
+                                            
+                                            // Determine risk factors based on root cause
+                                            const rootCause = criticalIssue.preliminary_root_cause.toLowerCase();
+                                            if (rootCause.includes('contractor') || rootCause.includes('performance')) {
+                                              riskFactors.push('👷 Contractor Management', '📈 Performance Monitoring');
+                                            }
+                                            if (rootCause.includes('regulatory') || rootCause.includes('clearance')) {
+                                              riskFactors.push('📋 Regulatory Compliance', '⏰ Approval Delays');
+                                            }
+                                            if (rootCause.includes('financial') || rootCause.includes('fund')) {
+                                              riskFactors.push('💰 Financial Planning', '💳 Cash Flow');
+                                            }
+                                            if (rootCause.includes('technical') || rootCause.includes('design')) {
+                                              riskFactors.push('🔧 Technical Complexity', '📐 Design Issues');
+                                            }
+                                            
+                                            // Default factors if none match
+                                            if (riskFactors.length === 0) {
+                                              riskFactors.push('⚠️ Process Risk', '🔍 Monitoring Gap');
+                                            }
+                                            
+                                            return riskFactors.map((factor, index) => (
+                                              <span key={index} className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded border">
+                                                {factor}
+                                              </span>
+                                            ));
+                                          })()}
+                                        </div>
+                                      </div>
                                     </div>
-                                    <p className="text-orange-700 text-sm">Requires investigation and analysis</p>
-                                  </div>
-                                )
-                              )}
+                                  )}
+                                  
+                                  {/* Recommended Action - Enhanced */}
+                                  {criticalIssue.recommended_action && (
+                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 p-4 rounded-lg">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center">
+                                          <TrendingUp className="h-5 w-5 text-blue-600 mr-2" />
+                                          <span className="font-semibold text-blue-800 text-base">Recommended Action</span>
+                                        </div>
+                                        <span className="text-xs bg-blue-200 text-blue-800 px-3 py-1 rounded-full font-medium">
+                                          👤 {criticalIssue.persona || insight.persona || 'Manager'}
+                                        </span>
+                                      </div>
+                                      
+                                      {/* Action Details */}
+                                      <div className="mb-3">
+                                        <p className="text-blue-800 text-sm bg-white/50 p-3 rounded border-l-2 border-blue-300">
+                                          {criticalIssue.recommended_action}
+                                        </p>
+                                      </div>
+                                      
+                                      {/* Action Metrics */}
+                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                                        {/* Priority Level */}
+                                        <div className="bg-white/60 p-3 rounded border border-blue-200">
+                                          <div className="flex items-center mb-1">
+                                            <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                                            <span className="font-medium text-blue-700 text-xs">PRIORITY</span>
+                                          </div>
+                                          <span className="text-sm font-bold text-blue-600">
+                                            {insight.priority.toUpperCase()}
+                                          </span>
+                                        </div>
+                                        
+                                        {/* Timeline */}
+                                        {criticalIssue.target_date && (
+                                          <div className="bg-white/60 p-3 rounded border border-blue-200">
+                                            <div className="flex items-center mb-1">
+                                              <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                                              <span className="font-medium text-green-700 text-xs">TARGET</span>
+                                            </div>
+                                            <span className="text-sm font-bold text-green-600">
+                                              {new Date(criticalIssue.target_date).toLocaleDateString('en-US', { 
+                                                month: 'short', 
+                                                day: 'numeric' 
+                                              })}
+                                            </span>
+                                          </div>
+                                        )}
+                                        
+                                        {/* Escalation Level */}
+                                        {criticalIssue.escalation_level && (
+                                          <div className="bg-white/60 p-3 rounded border border-blue-200">
+                                            <div className="flex items-center mb-1">
+                                              <div className="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
+                                              <span className="font-medium text-purple-700 text-xs">ESCALATION</span>
+                                            </div>
+                                            <span className="text-sm font-bold text-purple-600">
+                                              {criticalIssue.escalation_level}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            } else {
+                              // Fallback: try to extract from content (for non-critical issue insights)
+                              const content = insight.content;
+                              const rootCauseMatch = content.match(/Root Cause: ([^.]+(?:\.|$))/i) || 
+                                                   content.match(/root cause: ([^.]+(?:\.|$))/i);
+                              const actionMatch = content.match(/Recommended Action: (.+)/i) || 
+                                                content.match(/recommended action: (.+)/i) ||
+                                                content.match(/Action: (.+)/i) ||
+                                                content.match(/action: (.+)/i);
                               
-                              {/* Recommended Action */}
-                              {actionMatch ? (
-                                <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center">
-                                      <TrendingUp className="h-4 w-4 text-blue-600 mr-2" />
-                                      <span className="font-semibold text-blue-800">Recommended Action</span>
+                              return (
+                                <>
+                                  {/* Root Cause */}
+                                  {rootCauseMatch ? (
+                                    <div className="bg-orange-50 border-l-4 border-orange-400 p-3 rounded">
+                                      <div className="flex items-center mb-1">
+                                        <AlertCircle className="h-4 w-4 text-orange-600 mr-2" />
+                                        <span className="font-semibold text-orange-800">Root Cause</span>
+                                      </div>
+                                      <p className="text-orange-700 text-sm">{rootCauseMatch[1].replace(/\.$/, '')}</p>
                                     </div>
-                                    <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
-                                      👤 {getResponsiblePersona(actionMatch[1], insight.category)}
-                                    </span>
-                                  </div>
-                                  <p className="text-blue-700 text-sm">{actionMatch[1]}</p>
-                                </div>
-                              ) : (
-                                // Generate generic action based on category if not explicitly mentioned
-                                <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center">
-                                      <TrendingUp className="h-4 w-4 text-blue-600 mr-2" />
-                                      <span className="font-semibold text-blue-800">Recommended Action</span>
+                                  ) : (
+                                    // Generate generic root cause based on category if not explicitly mentioned
+                                    insight.category === 'risk' && (
+                                      <div className="bg-orange-50 border-l-4 border-orange-400 p-3 rounded">
+                                        <div className="flex items-center mb-1">
+                                          <AlertCircle className="h-4 w-4 text-orange-600 mr-2" />
+                                          <span className="font-semibold text-orange-800">Root Cause</span>
+                                        </div>
+                                        <p className="text-orange-700 text-sm">Requires investigation and analysis</p>
+                                      </div>
+                                    )
+                                  )}
+                                  
+                                  {/* Recommended Action */}
+                                  {actionMatch ? (
+                                    <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded">
+                                      <div className="flex items-center justify-between mb-1">
+                                        <div className="flex items-center">
+                                          <TrendingUp className="h-4 w-4 text-blue-600 mr-2" />
+                                          <span className="font-semibold text-blue-800">Recommended Action</span>
+                                        </div>
+                                        <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
+                                          👤 {insight.persona || 'Manager'}
+                                        </span>
+                                      </div>
+                                      <p className="text-blue-700 text-sm">{actionMatch[1]}</p>
                                     </div>
-                                    <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
-                                      👤 {(() => {
-                                        switch (insight.category) {
-                                          case 'risk': return 'Manager';
-                                          case 'performance': return 'RO/PIU';
-                                          case 'opportunity': return 'Member-Admin';
-                                          case 'achievement': return 'All Stakeholders';
-                                          default: return 'Manager';
-                                        }
-                                      })()}
-                                    </span>
-                                  </div>
-                                  <p className="text-blue-700 text-sm">
-                                    {(() => {
-                                      switch (insight.category) {
-                                        case 'risk': return 'Monitor closely and develop mitigation strategies';
-                                        case 'performance': return 'Review performance metrics and implement improvements';
-                                        case 'opportunity': return 'Evaluate potential and develop implementation plan';
-                                        case 'achievement': return 'Document best practices and share learnings';
-                                        default: return 'Review and take appropriate action';
-                                      }
-                                    })()}
-                                  </p>
-                                </div>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </CardDescription>
+                                  ) : (
+                                    // Generate generic action based on category if not explicitly mentioned
+                                    <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded">
+                                      <div className="flex items-center justify-between mb-1">
+                                        <div className="flex items-center">
+                                          <TrendingUp className="h-4 w-4 text-blue-600 mr-2" />
+                                          <span className="font-semibold text-blue-800">Recommended Action</span>
+                                        </div>
+                                        <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
+                                          👤 {(() => {
+                                            switch (insight.category) {
+                                              case 'risk': return 'Manager';
+                                              case 'performance': return 'RO/PIU';
+                                              case 'opportunity': return 'Member-Admin';
+                                              case 'achievement': return 'All Stakeholders';
+                                              default: return 'Manager';
+                                            }
+                                          })()}
+                                        </span>
+                                      </div>
+                                      <p className="text-blue-700 text-sm">
+                                        {(() => {
+                                          switch (insight.category) {
+                                            case 'risk': return 'Monitor closely and develop mitigation strategies';
+                                            case 'performance': return 'Review performance metrics and implement improvements';
+                                            case 'opportunity': return 'Evaluate potential and implement implementation plan';
+                                            case 'achievement': return 'Document best practices and share learnings';
+                                            default: return 'Review and take appropriate action';
+                                          }
+                                        })()}
+                                      </p>
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            }
+                          })()}
+                        </div>
+                      </CardDescription>
+                    )}
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                {/* Expandable Impact Details Section */}
-                {expandedInsights.has(insight.id) && (
-                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
-                      <AlertCircle className="h-4 w-4 mr-2" />
-                      Impact Details
-                    </h4>
-                    <div className="text-sm text-blue-800 space-y-2">
-                      {/* Get impact details from the database */}
-                      {(() => {
-                        // For critical issues, we should have impact_details from the API
-                        const criticalIssue = criticalIssuesData?.critical_issues.find(issue => issue.id.toString() === insight.id)
+              
+              {/* Impact Details Section - Only show when card is expanded */}
+              {!isCollapsed && (
+                <CardContent>
+                  {/* Expandable Impact Details Section */}
+                  {expandedInsights.has(insight.id) && (
+                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                        Impact Details
+                      </h4>
+                      <div className="text-sm text-blue-800 space-y-2">
+                        {/* Get impact details from the database */}
+                        {(() => {
+                          // For critical issues, we should have impact_details from the API
+                          const criticalIssue = criticalIssuesData?.critical_issues.find(issue => issue.id.toString() === insight.id)
+                          
+                          if (criticalIssue?.impact_details) {
+                            return <p>{criticalIssue.impact_details}</p>
+                          }
+                          
+                          // Fallback for other insights
+                          return <p>Impact analysis available upon detailed review.</p>
+                        })()}
                         
-                        if (criticalIssue?.impact_details) {
-                          return <p>{criticalIssue.impact_details}</p>
-                        }
-                        
-                        // Fallback for other insights
-                        return <p>Impact analysis available upon detailed review.</p>
-                      })()}
-                      
-                      {/* Additional metrics if available */}
-                      {(() => {
-                        const criticalIssue = criticalIssuesData?.critical_issues.find(issue => issue.id.toString() === insight.id)
-                        if (criticalIssue) {
-                          return (
-                            <div className="grid grid-cols-2 gap-4 mt-3">
-                              {criticalIssue.age_days && (
-                                <div>
-                                  <span className="font-medium">Age:</span> {criticalIssue.age_days} days
-                                </div>
-                              )}
-                              {criticalIssue.target_date && (
-                                <div>
-                                  <span className="font-medium">Target Date:</span> {new Date(criticalIssue.target_date).toLocaleDateString()}
-                                </div>
-                              )}
-                              {criticalIssue.cvs_score && (
-                                <div>
-                                  <span className="font-medium">CVS Score:</span> {criticalIssue.cvs_score}/10
-                                </div>
-                              )}
-                              {criticalIssue.escalation_level && (
-                                <div>
-                                  <span className="font-medium">Escalation:</span> {criticalIssue.escalation_level}
-                                </div>
-                              )}
-                            </div>
-                          )
-                        }
-                      })()}
+                        {/* Additional metrics if available */}
+                        {(() => {
+                          const criticalIssue = criticalIssuesData?.critical_issues.find(issue => issue.id.toString() === insight.id)
+                          if (criticalIssue) {
+                            return (
+                              <div className="grid grid-cols-2 gap-4 mt-3">
+                                {criticalIssue.age_days && (
+                                  <div>
+                                    <span className="font-medium">Age:</span> {criticalIssue.age_days} days
+                                  </div>
+                                )}
+                                {criticalIssue.cvs_score && (
+                                  <div>
+                                    <span className="font-medium">CVS Score:</span> {criticalIssue.cvs_score}/5
+                                  </div>
+                                )}
+                                {criticalIssue.escalation_level && (
+                                  <div>
+                                    <span className="font-medium">Escalation:</span> {criticalIssue.escalation_level}
+                                  </div>
+                                )}
+                                {criticalIssue.issue_id && (
+                                  <div>
+                                    <span className="font-medium">Issue ID:</span> {criticalIssue.issue_id}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          }
+                        })()}
+                      </div>
                     </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <div className="flex items-center gap-4">
+                      <span className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        {insight.department}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        Generated {new Date(insight.generatedDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => toggleExpanded(insight.id)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      {expandedInsights.has(insight.id) ? 'Hide Details' : 'View Details'}
+                    </Button>
                   </div>
-                )}
-                
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1">
-                      <User className="h-3 w-3" />
-                      {insight.department}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      Generated {new Date(insight.generatedDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => toggleExpanded(insight.id)}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    {expandedInsights.has(insight.id) ? 'Hide Details' : 'View Details'}
-                  </Button>
-                </div>
-              </CardContent>
+                </CardContent>
+              )}
             </Card>
-          ))}
+            )
+          })}
 
           {filteredInsights.length === 0 && !criticalIssuesLoading && (
             <Card className="p-8 text-center">

@@ -97,6 +97,15 @@ export default function MPRInsightsPage() {
     }
   }
 
+  // Reset all filters function
+  const resetAllFilters = () => {
+    setSelectedFilter('all')
+    setSelectedProject('all')
+    setSelectedProjectType('all')
+    setSelectedPersona('all')
+    setSearchQuery('')
+  }
+
   // Get unique personas from the insights
   const availablePersonas = useMemo(() => {
     const personas = userVisibleInsights
@@ -310,7 +319,7 @@ export default function MPRInsightsPage() {
                 className="pl-10"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <select 
                 value={selectedFilter} 
                 onChange={(e) => setSelectedFilter(e.target.value as any)}
@@ -353,6 +362,18 @@ export default function MPRInsightsPage() {
                   <option key={persona} value={persona}>{persona}</option>
                 ))}
               </select>
+              
+              {/* Reset Filters Button */}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={resetAllFilters}
+                className="text-xs whitespace-nowrap"
+                disabled={selectedFilter === 'all' && selectedProject === 'all' && selectedProjectType === 'all' && selectedPersona === 'all' && searchQuery === ''}
+              >
+                <Filter className="h-3 w-3 mr-1" />
+                Reset All
+              </Button>
             </div>
           </div>
         </div>

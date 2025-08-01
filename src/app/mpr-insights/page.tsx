@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { TrendingUp, Filter, Calendar, User, BarChart3, FileText, Search, Eye, ChevronDown, AlertCircle, Loader2, Info } from 'lucide-react'
 import { MainLayout } from '@/components/layout/main-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -51,11 +51,11 @@ export default function MPRInsightsPage() {
 
   // Initialize collapsed state for all insights (collapsed by default)
   useEffect(() => {
-    if (userVisibleInsights.length > 0) {
-      const allInsightIds = new Set(userVisibleInsights.map(insight => insight.id))
+    if (userVisibleInsights.length > 0 && collapsedCards.size === 0) {
+      const allInsightIds = new Set(userVisibleInsights.map(insight => String(insight.id)))
       setCollapsedCards(allInsightIds)
     }
-  }, [userVisibleInsights])
+  }, [userVisibleInsights, collapsedCards.size])
 
   // Apply filters
   const filteredInsights = useMemo(() => {
@@ -148,6 +148,40 @@ export default function MPRInsightsPage() {
       return newSet
     })
   }
+
+  // Expand all filtered insights
+  const expandAllFiltered = useCallback(() => {
+    const filteredIds = filteredInsights.map(insight => String(insight.id))
+    
+    setCollapsedCards(prev => {
+      const newSet = new Set<string>()
+      // Keep all non-filtered items collapsed
+      prev.forEach(id => {
+        if (!filteredIds.includes(id)) {
+          newSet.add(id)
+        }
+      })
+      return newSet
+    })
+  }, [filteredInsights])
+
+  // Collapse all filtered insights  
+  const collapseAllFiltered = useCallback(() => {
+    const filteredIds = filteredInsights.map(insight => String(insight.id))
+    
+    setCollapsedCards(prev => {
+      const newSet = new Set(prev)
+      filteredIds.forEach(id => {
+        newSet.add(id)
+      })
+      return newSet
+    })
+  }, [filteredInsights])
+
+  // Check if all filtered insights are expanded
+  const allFilteredExpanded = filteredInsights.length > 0 && filteredInsights.every(insight => !collapsedCards.has(String(insight.id)))
+  // Check if all filtered insights are collapsed
+  const allFilteredCollapsed = filteredInsights.length > 0 && filteredInsights.every(insight => collapsedCards.has(String(insight.id)))
 
   // Loading state
   if (criticalIssuesLoading) {
@@ -344,10 +378,36 @@ export default function MPRInsightsPage() {
             <h2 className="text-xl font-semibold">
               {filteredInsights.length} Insights Found
             </h2>
+            {filteredInsights.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={allFilteredExpanded ? collapseAllFiltered : expandAllFiltered}
+                  className="text-xs"
+                  disabled={filteredInsights.length === 0}
+                >
+                  {allFilteredExpanded ? (
+                    <>
+                      <ChevronDown className="h-3 w-3 mr-1" />
+                      Collapse All
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-3 w-3 mr-1" />
+                      Expand All
+                    </>
+                  )}
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  {allFilteredExpanded ? 'All expanded' : allFilteredCollapsed ? 'All collapsed' : 'Mixed state'}
+                </span>
+              </div>
+            )}
           </div>
           
           {filteredInsights.map((insight) => {
-            const isCollapsed = collapsedCards.has(insight.id)
+            const isCollapsed = collapsedCards.has(String(insight.id))
             
             return (
             <Card key={insight.id} className="group hover:shadow-lg transition-all">
@@ -413,10 +473,10 @@ export default function MPRInsightsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => toggleCardCollapsed(insight.id)}
+                        onClick={() => toggleCardCollapsed(String(insight.id))}
                         className="ml-3 flex-shrink-0"
                       >
-                        <ChevronDown className={`h-4 w-4 transition-transform ${isCollapsed ? '' : 'rotate-180'}`} />
+                        <ChevronDown className={`h-4 w-4 transition-transform ${!isCollapsed ? 'rotate-180' : ''}`} />
                         <span className="ml-1 text-xs">
                           {isCollapsed ? 'Expand' : 'Collapse'}
                         </span>

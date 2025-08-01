@@ -212,9 +212,14 @@ export default function MPRInsightsPage() {
   }, [filteredInsights])
 
   // Check if all filtered insights are expanded
-  const allFilteredExpanded = filteredInsights.length > 0 && filteredInsights.every(insight => !collapsedCards.has(String(insight.id)))
+  const allFilteredExpanded = useMemo(() => {
+    return filteredInsights.length > 0 && filteredInsights.every(insight => !collapsedCards.has(String(insight.id)))
+  }, [filteredInsights, collapsedCards, renderKey, forceUpdate])
+  
   // Check if all filtered insights are collapsed
-  const allFilteredCollapsed = filteredInsights.length > 0 && filteredInsights.every(insight => collapsedCards.has(String(insight.id)))
+  const allFilteredCollapsed = useMemo(() => {
+    return filteredInsights.length > 0 && filteredInsights.every(insight => collapsedCards.has(String(insight.id)))
+  }, [filteredInsights, collapsedCards, renderKey, forceUpdate])
 
   // Loading state
   if (criticalIssuesLoading) {
@@ -441,7 +446,7 @@ export default function MPRInsightsPage() {
                 >
                   {allFilteredExpanded ? (
                     <>
-                      <ChevronDown className="h-3 w-3 mr-1" />
+                      <ChevronDown className="h-3 w-3 mr-1 rotate-180" />
                       Collapse All
                     </>
                   ) : (

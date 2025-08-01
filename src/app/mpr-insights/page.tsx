@@ -14,7 +14,7 @@ export default function MPRInsightsPage() {
   // Current user context (would come from auth)
   const currentUser = {
     id: 'user123',
-    name: 'John Doe',
+    name: 'Devesh Meena',
     role: 'manager',
     department: 'Engineering'
   }
@@ -161,7 +161,7 @@ export default function MPRInsightsPage() {
                 MPR Insights Dashboard
               </h1>
               <p className="text-muted-foreground mt-2">
-                AI-generated insights from monthly progress reports • Viewing as <span className="font-medium">{currentUser.role}</span> in <span className="font-medium">{currentUser.department}</span>
+                AI-generated insights from monthly progress reports 
                 {healthData && (
                   <span className="ml-2">
                     • API Status: <span className={`font-medium ${healthData.status === 'healthy' ? 'text-green-600' : 'text-red-600'}`}>
@@ -317,7 +317,115 @@ export default function MPRInsightsPage() {
                     </div>
                     <CardTitle className="text-lg mb-2">{insight.title}</CardTitle>
                     <CardDescription className="text-base leading-relaxed">
-                      {insight.content}
+                      {/* Enhanced formatting for all insights */}
+                      <div className="space-y-3">
+                        {/* Main content with cleaned text */}
+                        {(() => {
+                          const content = insight.content;
+                          // Remove Root Cause and Recommended Action from main content for cleaner display
+                          let cleanContent = content
+                            .replace(/Root Cause: [^.]+(?:\.|$)/g, '')
+                            .replace(/Recommended Action: .+/g, '')
+                            .trim();
+                          
+                          // If content is empty after cleaning, show original
+                          if (!cleanContent) {
+                            cleanContent = content;
+                          }
+                          
+                          return <p className="mb-3">{cleanContent}</p>;
+                        })()}
+                        
+                        {/* Extract and display Root Cause and Recommended Action for all insights */}
+                        {(() => {
+                          const content = insight.content;
+                          const rootCauseMatch = content.match(/Root Cause: ([^.]+(?:\.|$))/i) || 
+                                               content.match(/root cause: ([^.]+(?:\.|$))/i);
+                          const actionMatch = content.match(/Recommended Action: (.+)/i) || 
+                                            content.match(/recommended action: (.+)/i) ||
+                                            content.match(/Action: (.+)/i) ||
+                                            content.match(/action: (.+)/i);
+                          
+                          // Determine responsible persona based on content and insight type
+                          const getResponsiblePersona = (actionText: string, category: string) => {
+                            return insight.persona
+                          };
+                          
+                          return (
+                            <>
+                              {/* Root Cause */}
+                              {rootCauseMatch ? (
+                                <div className="bg-orange-50 border-l-4 border-orange-400 p-3 rounded">
+                                  <div className="flex items-center mb-1">
+                                    <AlertCircle className="h-4 w-4 text-orange-600 mr-2" />
+                                    <span className="font-semibold text-orange-800">Root Cause</span>
+                                  </div>
+                                  <p className="text-orange-700 text-sm">{rootCauseMatch[1].replace(/\.$/, '')}</p>
+                                </div>
+                              ) : (
+                                // Generate generic root cause based on category if not explicitly mentioned
+                                insight.category === 'risk' && (
+                                  <div className="bg-orange-50 border-l-4 border-orange-400 p-3 rounded">
+                                    <div className="flex items-center mb-1">
+                                      <AlertCircle className="h-4 w-4 text-orange-600 mr-2" />
+                                      <span className="font-semibold text-orange-800">Root Cause</span>
+                                    </div>
+                                    <p className="text-orange-700 text-sm">Requires investigation and analysis</p>
+                                  </div>
+                                )
+                              )}
+                              
+                              {/* Recommended Action */}
+                              {actionMatch ? (
+                                <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center">
+                                      <TrendingUp className="h-4 w-4 text-blue-600 mr-2" />
+                                      <span className="font-semibold text-blue-800">Recommended Action</span>
+                                    </div>
+                                    <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
+                                      👤 {getResponsiblePersona(actionMatch[1], insight.category)}
+                                    </span>
+                                  </div>
+                                  <p className="text-blue-700 text-sm">{actionMatch[1]}</p>
+                                </div>
+                              ) : (
+                                // Generate generic action based on category if not explicitly mentioned
+                                <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center">
+                                      <TrendingUp className="h-4 w-4 text-blue-600 mr-2" />
+                                      <span className="font-semibold text-blue-800">Recommended Action</span>
+                                    </div>
+                                    <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
+                                      👤 {(() => {
+                                        switch (insight.category) {
+                                          case 'risk': return 'Manager';
+                                          case 'performance': return 'RO/PIU';
+                                          case 'opportunity': return 'Member-Admin';
+                                          case 'achievement': return 'All Stakeholders';
+                                          default: return 'Manager';
+                                        }
+                                      })()}
+                                    </span>
+                                  </div>
+                                  <p className="text-blue-700 text-sm">
+                                    {(() => {
+                                      switch (insight.category) {
+                                        case 'risk': return 'Monitor closely and develop mitigation strategies';
+                                        case 'performance': return 'Review performance metrics and implement improvements';
+                                        case 'opportunity': return 'Evaluate potential and develop implementation plan';
+                                        case 'achievement': return 'Document best practices and share learnings';
+                                        default: return 'Review and take appropriate action';
+                                      }
+                                    })()}
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
                     </CardDescription>
                     {insight.projectInfo && (
                       <div className="mt-3 text-sm text-muted-foreground">
@@ -358,10 +466,10 @@ export default function MPRInsightsPage() {
                       Generated {new Date(insight.generatedDate).toLocaleDateString()}
                     </span>
                   </div>
-                  <Button variant="ghost" size="sm">
+                  {/* <Button variant="ghost" size="sm">
                     <Eye className="h-4 w-4 mr-1" />
                     View Details
-                  </Button>
+                  </Button> */}
                 </div>
               </CardContent>
             </Card>

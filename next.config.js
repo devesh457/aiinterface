@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
+  basePath: '/mpr',
+  assetPrefix: '/mpr/',
+
   images: {
     domains: ['localhost'],
   },
@@ -23,4 +23,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig 
+module.exports = nextConfig

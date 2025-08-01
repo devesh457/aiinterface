@@ -79,7 +79,13 @@ class DocumentProcessor {
 
       // Only support PDF files for Schedule B & C documents
       if (file.type === 'application/pdf') {
-        return await this.processFileWithAnalysis(file, documentId)
+        const result = await this.processFileWithAnalysis(file, documentId)
+        return {
+          success: result.processingResult.success,
+          content: result.analysisResult?.extractedText || '',
+          error: result.processingResult.error,
+          documentType: result.analysisResult?.documentType || 'unknown'
+        }
       } else {
         throw new Error('Only PDF files are supported for Schedule B & C documents')
       }

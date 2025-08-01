@@ -98,7 +98,7 @@ export function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                 <User className="h-4 w-4 text-primary" />
               </div>
-              <span className="text-sm font-medium hidden sm:block">John Doe</span>
+              <span className="text-sm font-medium hidden sm:block">Devesh Meena</span>
             </div>
 
             <Button 

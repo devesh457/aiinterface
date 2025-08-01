@@ -6,6 +6,9 @@
 .pnp.js
 .yarn/install-state.gz
 
+# logs
+*.log
+
 # testing
 /coverage
 
@@ -46,7 +49,7 @@ next-env.d.ts
 Thumbs.db
 
 # Environment files (but keep .env for sharing non-sensitive config)
-# .env
+.env
 
 # Python virtual environment (if any)
 interface_env/

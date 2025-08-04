@@ -572,31 +572,107 @@ export default function MPRInsightsPage() {
                     {/* Collapsible Content */}
                     {!isCollapsed && (
                       <CardDescription className="text-base leading-relaxed">
-                        {/* Enhanced formatting for all insights */}
-                        <div className="space-y-3">
-                          {/* Main content with cleaned text */}
-                          {(() => {
-                            const content = insight.content;
-                            // Remove Root Cause and Recommended Action from main content for cleaner display
-                            let cleanContent = content
-                              .replace(/Root Cause: [^.]+(?:\.|$)/g, '')
-                              .replace(/Recommended Action: .+/g, '')
-                              .trim();
+                          {/* Enhanced formatting for all insights */}
+                          <div className="space-y-3">
+                            {/* Main content with cleaned text */}
+                            {(() => {
+                              const content = insight.content;
+                              // Remove Root Cause and Recommended Action from main content for cleaner display
+                              let cleanContent = content
+                                .replace(/Root Cause: [^.]+(?:\.|$)/g, '')
+                                .replace(/Recommended Action: .+/g, '')
+                                .trim();
+                              
+                              // If content is empty after cleaning, show original
+                              if (!cleanContent) {
+                                cleanContent = content;
+                              }
+                              
+                              return <p className="mb-3">{cleanContent}</p>;
+                            })()}
                             
-                            // If content is empty after cleaning, show original
-                            if (!cleanContent) {
-                              cleanContent = content;
-                            }
-                            
-                            return <p className="mb-3">{cleanContent}</p>;
-                          })()}
-                          
-                          {/* Extract and display Root Cause and Recommended Action for all insights */}
-                          {(() => {
-                            // Get Root Cause and Recommended Action directly from API data instead of parsing content
-                            const criticalIssue = criticalIssuesData?.critical_issues.find(issue => issue.id.toString() === insight.id)
-                            
-                            if (criticalIssue) {
+                            {/* Impact Details Section - Now shown above Root Cause */}
+                            {(() => {
+                              const criticalIssue = criticalIssuesData?.critical_issues.find(issue => issue.id.toString() === insight.id)
+                              
+                              if (criticalIssue?.impact_details) {
+                                return (
+                                  <div className="bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-400 p-4 rounded-lg mb-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div className="flex items-center">
+                                        <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
+                                        <span className="font-semibold text-red-800 text-base">Impact Assessment</span>
+                                      </div>
+                                      {/* <span className="text-xs bg-red-200 text-red-800 px-3 py-1 rounded-full font-medium">
+                                        🎯 Critical Impact
+                                      </span> */}
+                                    </div>
+                                    
+                                    <div className="mb-3">
+                                      <p className="text-red-800 text-sm bg-white/50 p-3 rounded border-l-2 border-red-300">
+                                        {criticalIssue.impact_details}
+                                      </p>
+                                    </div>
+                                    
+                                    {/* Impact Metrics */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                                      {/* CVS Score */}
+                                      {criticalIssue.cvs_score && (
+                                        <div className="bg-white/60 p-3 rounded border border-red-200">
+                                          <div className="flex items-center mb-2">
+                                            <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                                            <span className="font-medium text-red-700 text-xs">CVS SCORE</span>
+                                          </div>
+                                          <div className="flex items-center">
+                                            <span className="text-lg font-bold text-red-600">
+                                              {criticalIssue.cvs_score}/5
+                                            </span>
+                                            <span className="text-xs text-red-600 ml-2">severity</span>
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Age Analysis */}
+                                      {criticalIssue.age_days && (
+                                        <div className="bg-white/60 p-3 rounded border border-red-200">
+                                          <div className="flex items-center mb-2">
+                                            <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
+                                            <span className="font-medium text-orange-700 text-xs">DURATION</span>
+                                          </div>
+                                          <div className="flex items-center">
+                                            <span className="text-lg font-bold text-orange-600">
+                                              {criticalIssue.age_days}
+                                            </span>
+                                            <span className="text-xs text-orange-600 ml-2">days</span>
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Category */}
+                                      <div className="bg-white/60 p-3 rounded border border-red-200">
+                                        <div className="flex items-center mb-2">
+                                          <div className="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
+                                          <span className="font-medium text-purple-700 text-xs">CATEGORY</span>
+                                        </div>
+                                        <div className="flex items-center">
+                                          <span className="text-sm font-bold text-purple-600">
+                                            {criticalIssue.category}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
+
+                            {/* Extract and display Root Cause and Recommended Action for all insights */}
+                            {(() => {
+                              // Get Root Cause and Recommended Action directly from API data instead of parsing content
+                              const criticalIssue = criticalIssuesData?.critical_issues.find(issue => issue.id.toString() === insight.id)
+                              
+                              if (criticalIssue) {
                               // For critical issues, use API data directly
                               return (
                                 <>
@@ -627,7 +703,7 @@ export default function MPRInsightsPage() {
                                       {/* Analysis Dimensions */}
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                                         {/* Impact Analysis */}
-                                        <div className="bg-white/60 p-3 rounded border border-orange-200">
+                                        {/* <div className="bg-white/60 p-3 rounded border border-orange-200">
                                           <div className="flex items-center mb-2">
                                             <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
                                             <span className="font-medium text-red-700 text-xs">IMPACT SEVERITY</span>
@@ -638,7 +714,7 @@ export default function MPRInsightsPage() {
                                             </span>
                                             <span className="text-xs text-red-600 ml-2">CVS Score</span>
                                           </div>
-                                        </div>
+                                        </div> */}
                                         
                                         {/* Age Analysis */}
                                         <div className="bg-white/60 p-3 rounded border border-orange-200">
@@ -859,23 +935,31 @@ export default function MPRInsightsPage() {
                 <CardContent>
                   {/* Expandable Impact Details Section */}
                   {expandedInsights.has(insight.id) && (
-                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
+                    <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <h4 className="font-semibold text-green-900 mb-2 flex items-center">
                         <AlertCircle className="h-4 w-4 mr-2" />
-                        Impact Details
+                        Escalation Justification & Additional Details
                       </h4>
-                      <div className="text-sm text-blue-800 space-y-2">
-                        {/* Get impact details from the database */}
+                      <div className="text-sm text-green-800 space-y-2">
+                        {/* Get justification_escalation from the database */}
                         {(() => {
-                          // For critical issues, we should have impact_details from the API
+                          // For critical issues, we should have justification_escalation from the API
                           const criticalIssue = criticalIssuesData?.critical_issues.find(issue => issue.id.toString() === insight.id)
                           
-                          if (criticalIssue?.impact_details) {
-                            return <p>{criticalIssue.impact_details}</p>
+                          if (criticalIssue?.justification_escalation) {
+                            return (
+                              <div className="mb-3">
+                                <div className="flex items-center mb-2">
+                                  <TrendingUp className="h-4 w-4 text-green-600 mr-2" />
+                                  <span className="font-medium text-green-800">Escalation Justification</span>
+                                </div>
+                                <p className="bg-white/60 p-3 rounded border-l-2 border-green-300">{criticalIssue.justification_escalation}</p>
+                              </div>
+                            )
                           }
                           
                           // Fallback for other insights
-                          return <p>Impact analysis available upon detailed review.</p>
+                          return <p>Escalation analysis available upon detailed review.</p>
                         })()}
                         
                         {/* Additional metrics if available */}
@@ -884,24 +968,32 @@ export default function MPRInsightsPage() {
                           if (criticalIssue) {
                             return (
                               <div className="grid grid-cols-2 gap-4 mt-3">
-                                {criticalIssue.age_days && (
+                                {criticalIssue.communication_timeline && (
                                   <div>
-                                    <span className="font-medium">Age:</span> {criticalIssue.age_days} days
+                                    <span className="font-medium">Communication Timeline:</span> {criticalIssue.communication_timeline}
                                   </div>
                                 )}
-                                {criticalIssue.cvs_score && (
+                                {criticalIssue.target_date && (
                                   <div>
-                                    <span className="font-medium">CVS Score:</span> {criticalIssue.cvs_score}/5
+                                    <span className="font-medium">Target Date:</span> {new Date(criticalIssue.target_date).toLocaleDateString()}
                                   </div>
                                 )}
                                 {criticalIssue.escalation_level && (
                                   <div>
-                                    <span className="font-medium">Escalation:</span> {criticalIssue.escalation_level}
+                                    <span className="font-medium">Escalation Level:</span> {criticalIssue.escalation_level}
                                   </div>
                                 )}
                                 {criticalIssue.issue_id && (
                                   <div>
                                     <span className="font-medium">Issue ID:</span> {criticalIssue.issue_id}
+                                  </div>
+                                )}
+                                {criticalIssue.source_reference && (
+                                  <div className="col-span-2">
+                                    <span className="font-medium">Source Reference:</span> 
+                                    <div className="text-xs bg-gray-100 p-2 rounded mt-1 font-mono">
+                                      {criticalIssue.source_reference}
+                                    </div>
                                   </div>
                                 )}
                               </div>

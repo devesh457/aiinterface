@@ -1,0 +1,49 @@
+
+> ai-interface-frontend@0.1.0 dev
+> next dev
+
+   ▲ Next.js 14.0.4
+   - Local:        http://localhost:3000
+   - Environments: .env
+
+ ✓ Ready in 2.2s
+ ○ Compiling / ...
+ ✓ Compiled / in 3.8s (624 modules)
+ ✓ Compiled in 465ms (320 modules)
+ ○ Compiling /chat ...
+ ✓ Compiled /chat in 11.5s (888 modules)
+ ○ Compiling /mpr-insights ...
+ ✓ Compiled /mpr-insights in 777ms (1085 modules)
+ ○ Compiling /schedule-checker ...
+ ✓ Compiled /schedule-checker in 664ms (1101 modules)
+ ○ Compiling /not-found ...
+ ✓ Compiled /not-found in 653ms (1106 modules)
+pdf-parse not available: Error: ENOENT: no such file or directory, open './test/data/05-versions-space.pdf'
+    at Object.openSync (node:fs:596:3)
+    at Object.readFileSync (node:fs:464:35)
+    at eval (webpack-internal:///(ssr)/./node_modules/pdf-parse/index.js:10:25)
+    at (ssr)/./node_modules/pdf-parse/index.js (/home/ec2-user/aiinterface/.next/server/vendor-chunks/pdf-parse.js:19:1)
+    at __webpack_require__ (/home/ec2-user/aiinterface/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(ssr)/./src/lib/document-processor.ts:11:16)
+    at (ssr)/./src/lib/document-processor.ts (/home/ec2-user/aiinterface/.next/server/app/chat/page.js:395:1)
+    at __webpack_require__ (/home/ec2-user/aiinterface/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(ssr)/./src/app/chat/page.tsx:33:81)
+    at (ssr)/./src/app/chat/page.tsx (/home/ec2-user/aiinterface/.next/server/app/chat/page.js:285:1)
+    at __webpack_require__ (/home/ec2-user/aiinterface/.next/server/webpack-runtime.js:33:43)
+    at /home/ec2-user/aiinterface/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:103321
+    at eo (/home/ec2-user/aiinterface/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:103506)
+    at /home/ec2-user/aiinterface/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:105939
+    at Object._fromJSON (/home/ec2-user/aiinterface/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:106291)
+    at JSON.parse (<anonymous>)
+    at eu (/home/ec2-user/aiinterface/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:104000)
+    at en (/home/ec2-user/aiinterface/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:103068)
+    at /home/ec2-user/aiinterface/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:109874
+    at /home/ec2-user/aiinterface/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:109891
+    at /home/ec2-user/aiinterface/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:109924
+    at /home/ec2-user/aiinterface/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:109941
+    at t (/home/ec2-user/aiinterface/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:110164) {
+  errno: -2,
+  syscall: 'open',
+  code: 'ENOENT',
+  path: './test/data/05-versions-space.pdf'
+}

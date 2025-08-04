@@ -1,0 +1,80 @@
+nohup: ignoring input
+ ⨯ ./src/app/mpr-insights/page.tsx
+Error: 
+  [31mx[0m Unexpected token `MainLayout`. Expected jsx identifier
+     ,-[[36;1;4m/home/ec2-user/aiinterface/src/app/mpr-insights/page.tsx[0m:269:1]
+ [2m269[0m |   }
+ [2m270[0m | 
+ [2m271[0m |   return (
+ [2m272[0m |     <MainLayout>
+     : [31;1m     ^^^^^^^^^^[0m
+ [2m273[0m |       <div className="space-y-6">
+ [2m274[0m |         {/* Header */}
+ [2m275[0m |         <div className="flex flex-col gap-4">
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/mpr-insights/page.tsx
+ ⨯ ./src/app/mpr-insights/page.tsx
+Error: 
+  [31mx[0m Unexpected token `MainLayout`. Expected jsx identifier
+     ,-[[36;1;4m/home/ec2-user/aiinterface/src/app/mpr-insights/page.tsx[0m:269:1]
+ [2m269[0m |   }
+ [2m270[0m | 
+ [2m271[0m |   return (
+ [2m272[0m |     <MainLayout>
+     : [31;1m     ^^^^^^^^^^[0m
+ [2m273[0m |       <div className="space-y-6">
+ [2m274[0m |         {/* Header */}
+ [2m275[0m |         <div className="flex flex-col gap-4">
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/mpr-insights/page.tsx
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⨯ ./src/app/mpr-insights/page.tsx
+Error: 
+  [31mx[0m Unexpected token `MainLayout`. Expected jsx identifier
+     ,-[[36;1;4m/home/ec2-user/aiinterface/src/app/mpr-insights/page.tsx[0m:269:1]
+ [2m269[0m |   }
+ [2m270[0m | 
+ [2m271[0m |   return (
+ [2m272[0m |     <MainLayout>
+     : [31;1m     ^^^^^^^^^^[0m
+ [2m273[0m |       <div className="space-y-6">
+ [2m274[0m |         {/* Header */}
+ [2m275[0m |         <div className="flex flex-col gap-4">
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/mpr-insights/page.tsx
+ ⨯ ./src/app/mpr-insights/page.tsx
+Error: 
+  [31mx[0m Unexpected token `MainLayout`. Expected jsx identifier
+     ,-[[36;1;4m/home/ec2-user/aiinterface/src/app/mpr-insights/page.tsx[0m:269:1]
+ [2m269[0m |   }
+ [2m270[0m | 
+ [2m271[0m |   return (
+ [2m272[0m |     <MainLayout>
+     : [31;1m     ^^^^^^^^^^[0m
+ [2m273[0m |       <div className="space-y-6">
+ [2m274[0m |         {/* Header */}
+ [2m275[0m |         <div className="flex flex-col gap-4">
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/mpr-insights/page.tsx
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.

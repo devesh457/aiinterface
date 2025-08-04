@@ -42,6 +42,9 @@ export interface MPRCriticalIssue {
   cost_score: number | null;
   visibility_score: number | null;
   severity_score: number | null;
+  justification_escalation: string | null;
+  communication_timeline: string | null;
+  source_reference: string | null;
   created_at: string | null;
   // Report details
   upc_code: string;

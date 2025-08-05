@@ -334,12 +334,12 @@ export default function MPRInsightsPage() {
               <select 
                 value={selectedProject} 
                 onChange={(e) => setSelectedProject(e.target.value)}
-                className="px-3 py-2 border rounded-md text-sm"
+                className="px-3 py-2 border rounded-md text-sm min-w-0 max-w-[250px] truncate"
               >
                 <option value="all">All Projects</option>
                 {availableProjects.map(project => (
-                  <option key={project} value={project}>
-                    {project && project.length > 50 ? project.substring(0, 50) + '...' : project}
+                  <option key={project} value={project} title={project}>
+                    {project && project.length > 30 ? project.substring(0, 30) + '...' : project}
                   </option>
                 ))}
               </select>
@@ -379,11 +379,36 @@ export default function MPRInsightsPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-4">
-          {categoriesData?.categories.map((category, index) => {
+        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
+          {categoriesData?.categories
+            .sort((a, b) => {
+              // Sort by issue count (descending), then alphabetically for ties
+              const countA = categoryStats[a] || 0;
+              const countB = categoryStats[b] || 0;
+              if (countB !== countA) {
+                return countB - countA; // Higher counts first
+              }
+              return a.localeCompare(b); // Alphabetical for same counts
+            })
+            .map((category, index) => {
             // Define colors for each category
             const getCategoryColor = (cat: string) => {
               switch (cat) {
+                case 'Safety & Quality': return 'text-red-600'
+                case 'Right of Way & Land Acquisition': return 'text-blue-600'
+                case 'Financial & Revenue': return 'text-green-600'
+                case 'Supervision & Quality Control': return 'text-orange-600'
+                case 'Legal': return 'text-purple-600'
+                case 'Public Complaints & Grievances': return 'text-pink-600'
+                case 'Asset Inventory': return 'text-indigo-600'
+                case 'Traffic Management': return 'text-yellow-600'
+                case 'Emergency & Force Majeure': return 'text-red-700'
+                case 'Maintenance': return 'text-teal-600'
+                case 'Toll & Revenue Operations': return 'text-emerald-600'
+                case 'Project Progress & Delays': return 'text-amber-600'
+                case 'Contractual & Design Issues': return 'text-slate-600'
+                case 'Regulatory Clearances': return 'text-violet-600'
+                // Legacy fallbacks for backwards compatibility
                 case 'Financial': return 'text-green-600'
                 case 'Quality/NCR': return 'text-orange-600'
                 case 'ROW': return 'text-blue-600'
@@ -395,6 +420,21 @@ export default function MPRInsightsPage() {
             // Define icons for each category
             const getCategoryIcon = (cat: string) => {
               switch (cat) {
+                case 'Safety & Quality': return '⚠️'
+                case 'Right of Way & Land Acquisition': return '🛣️'
+                case 'Financial & Revenue': return '💰'
+                case 'Supervision & Quality Control': return '🔍'
+                case 'Legal': return '⚖️'
+                case 'Public Complaints & Grievances': return '📢'
+                case 'Asset Inventory': return '🏗️'
+                case 'Traffic Management': return '🚦'
+                case 'Emergency & Force Majeure': return '🚨'
+                case 'Maintenance': return '🔧'
+                case 'Toll & Revenue Operations': return '🛣️'
+                case 'Project Progress & Delays': return '📈'
+                case 'Contractual & Design Issues': return '📋'
+                case 'Regulatory Clearances': return '📜'
+                // Legacy fallbacks for backwards compatibility
                 case 'Financial': return '💰'
                 case 'Quality/NCR': return '🔍'
                 case 'ROW': return '🛣️'
@@ -404,7 +444,13 @@ export default function MPRInsightsPage() {
             }
             
             return (
-              <Card key={category}>
+              <Card 
+                key={category} 
+                className={`cursor-pointer transition-all hover:shadow-md ${
+                  selectedFilter === category ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+                }`}
+                onClick={() => setSelectedFilter(selectedFilter === category ? 'all' : category)}
+              >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">{category}</CardTitle>
                   <div className="text-xl">{getCategoryIcon(category)}</div>

@@ -1,7 +1,11 @@
 /** @type {import('next').NextConfig} */
+// Check if this is for AI Tools (default true) or regular MPR 
+const isAITools = process.env.NEXT_PUBLIC_AI_TOOLS_MODE !== 'false'
+
 const nextConfig = {
-  basePath: '/mpr',
-  assetPrefix: '/mpr/',
+  // Only use basePath for regular MPR, not for AI Tools
+  basePath: isAITools ? '/ai_tools' : '/mpr',
+  // assetPrefix: isAITools ? '/ai_tools/' : '/mpr/',  // Removed - causes static asset loading issues
 
   images: {
     domains: ['localhost'],

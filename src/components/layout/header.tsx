@@ -14,6 +14,7 @@ import {
   Sun
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { paths } from '@/lib/paths'
 
 interface HeaderProps {
   sidebarOpen: boolean
@@ -39,7 +40,7 @@ export function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Left side - Logo */}
-        <Link href="/" className="flex items-center gap-2">
+        <Link href={paths.home} className="flex items-center gap-2">
           <div className="relative">
             <Bot className="h-8 w-8 text-primary" />
             <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500 animate-pulse" />
@@ -50,21 +51,21 @@ export function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
         {/* Center - Navigation links (will expand with more tools) */}
         <nav className="flex items-center gap-6">
           <Link 
-            href="/chat" 
+            href={paths.chat} 
             className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
           >
             <Bot className="h-4 w-4" />
             Chat
           </Link>
           <Link 
-            href="/mpr-insights" 
+            href={paths.mprInsights} 
             className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
           >
             <TrendingUp className="h-4 w-4" />
             MPR Insights
           </Link>
           <Link 
-            href="/schedule-checker" 
+            href={paths.scheduleChecker} 
             className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
           >
             <FileCheck className="h-4 w-4" />

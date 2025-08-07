@@ -47,3 +47,28 @@ pdf-parse not available: Error: ENOENT: no such file or directory, open './test/
   code: 'ENOENT',
   path: './test/data/05-versions-space.pdf'
 }
+
+> ai-interface-frontend@0.1.0 dev
+> next dev --port 3001
+
+   ▲ Next.js 14.0.4
+   - Local:        http://localhost:3001
+   - Environments: .env
+
+ ✓ Ready in 1940ms
+ ○ Compiling /chat ...
+ ✓ Compiled /chat in 2.8s (639 modules)
+ ✓ Compiled in 571ms (328 modules)
+ ○ Compiling /not-found ...
+ ✓ Compiled /not-found in 509ms (630 modules)
+ ○ Compiling /mpr-insights ...
+ ✓ Compiled /mpr-insights in 1616ms (846 modules)
+ ✓ Compiled / in 491ms (845 modules)
+ ✓ Compiled /chat in 191ms (311 modules)
+ ✓ Compiled /mpr-insights in 159ms (460 modules)
+ ✓ Compiled / in 142ms (455 modules)
+ ✓ Compiled /not-found in 320ms (695 modules)
+ ✓ Compiled /mpr-insights in 163ms (458 modules)
+ ○ Compiling /schedule-checker ...
+ ✓ Compiled /schedule-checker in 1383ms (991 modules)
+ ✓ Compiled /chat in 174ms (543 modules)
